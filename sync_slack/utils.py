@@ -45,13 +45,15 @@ def poll_for_events(channel, folder_id):
             res = requests.get('%s/events?id=%s' % (config.SYNC_API_BASE_URL, last_event_id))
             events = res.json().get('data').get('events')
 
+            # Store last event id
+            last_event_id = res.json().get('data').get('id')
+
             # Sort events by id. We want lowest id (earliest) events first so they process first
             # By default we are returned highest id (most current) events
             sorted_events = sorted(events, key=lambda k: k['id'], reverse=False)
 
             for event in sorted_events:
                 event_type = event.get('typename')
-                event_id = event.get('id')
 
                 # File added to folder
                 if event_type in ['EVENT_LOCAL_FILE_ADDED', 'EVENT_REMOTE_FILE_ADDED']:
@@ -69,10 +71,5 @@ def poll_for_events(channel, folder_id):
                     if event_folder_id == folder_id:
                         send_message(channel, 'File "%s" removed from folder "%s"' % (file_name, folder_name))
 
-                # Set highest event id (most recent event) to last_event_id so we don't get duplicates
-                if event_id > last_event_id:
-                    last_event_id = event_id
-
         except Exception as e:
             print 'Error %s' % e
-            # pass
